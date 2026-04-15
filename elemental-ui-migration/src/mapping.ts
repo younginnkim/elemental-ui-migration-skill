@@ -1,0 +1,253 @@
+export interface WidgetMapping {
+  target: string;
+  breakingChange?: boolean;
+  notes?: string;
+}
+
+export interface ParamChange {
+  removed?: string[];
+  renamed?: Record<string, string>;
+  added?: string[];
+  notes?: string;
+}
+
+export const widgetMapping: Record<string, WidgetMapping> = {
+  // Core widgets
+  WButton: { target: 'EButton', breakingChange: true, notes: 'child (Widget) → text (String) or buildChildWidget; animation → enableAnimation; ButtonSize → EButtonSize; remove keepChild, originScale, onKey' },
+  WAlert: { target: 'EAlert', notes: 'WAlertType → EAlertType; WAlertImageType → EAlertImageType; new params: hideCurve, hideDuration, showCurve, showDuration' },
+  WItem: { target: 'EItem', notes: 'New params: onHover, onFocusChange, itemColor' },
+  WItemBase: { target: 'EItemBase' },
+  WItemLayout: { target: 'EItemLayout' },
+  WItemStyles: { target: 'EItemStyles' },
+  WContent: { target: 'EContent' },
+
+  // Panel
+  WPanel: { target: 'EPanel', notes: 'New params: fullHeight, keepAlive' },
+  WHeader: { target: 'EHeader' },
+  WPanelLayout: { target: 'EPanelLayout' },
+  WHeaderType: { target: 'EHeaderType' },
+  WHeaderButtons: { target: 'EHeaderButtons' },
+  WHeaderButtonBackgroundOpacity: { target: 'EHeaderButtonBackgroundOpacity' },
+  WHeaderMarqeeOn: { target: 'EHeaderMarqueeOn' },
+
+  // Popup
+  WPopup: { target: 'EPopup' },
+  WPopupData: { target: 'EPopupData' },
+  WPopupController: { target: 'EPopupController' },
+  WPopupOverlayController: { target: 'EPopupOverlayController' },
+  WPopupLayout: { target: 'EPopupLayout' },
+  WPopupPosition: { target: 'EPopupPosition' },
+  WPopupScrim: { target: 'EPopupScrim' },
+  WPopupStyles: { target: 'EPopupStyles' },
+  WPopupAnimationData: { target: 'EPopupAnimationData' },
+  WPopupChildData: { target: 'EPopupChildData' },
+  WPopupDialogData: { target: 'EPopupDialogData' },
+  WPopupShowDialogData: { target: 'EPopupShowDialogData' },
+  WPopupSpotlightRestrict: { target: 'EPopupSpotlightRestrict' },
+  WPopupInputType: { target: 'EPopupInputType' },
+
+  // Selection items
+  WCheckbox: { target: 'ECheckbox' },
+  WCheckboxBase: { target: 'ECheckboxBase' },
+  WCheckboxItem: { target: 'ECheckboxItem', notes: 'New params: checkboxSize, checkboxIconSize, isFocused, isOnTapDown, isOnTapUp' },
+  WCheckboxItemStyles: { target: 'ECheckboxItemStyles' },
+  WRadioButton: { target: 'ERadioButton' },
+  WRadioItem: { target: 'ERadioItem', notes: 'New param: isFocused' },
+  WRadioItemStyles: { target: 'ERadioItemStyles' },
+  WSwitch: { target: 'ESwitch' },
+  WSwitchBase: { target: 'ESwitchBase' },
+  WSwitchItem: { target: 'ESwitchItem', breakingChange: true, notes: 'Remove centered, inline, slotAfter, slotBefore; children param not supported — use EItem wrapper' },
+  WSwitchItemStyles: { target: 'ESwitchItemStyles' },
+
+  // Dropdown
+  WDropdown: { target: 'EDropdown', notes: 'WDropdownDirection → EDropdownDirection; WDropdownWidth → EDropdownWidth; WDropdownSize → EDropdownSize' },
+  WDropdownDirection: { target: 'EDropdownDirection' },
+  WDropdownWidth: { target: 'EDropdownWidth' },
+  WDropdownSize: { target: 'EDropdownSize' },
+
+  // Virtual list
+  WVirtualList: { target: 'EVirtualList', breakingChange: true, notes: 'itemBuilder: (ctx, index) → (ctx, index, focusNode); itemHeight required; remove hoverToScroll, noScrollByWheel, onScroll, onScrollStart, onScrollStop' },
+  WVirtualListDirection: { target: 'EVirtualListDirection' },
+  WVirtualListScrollbar: { target: 'EVirtualListScrollbar' },
+
+  // Loading
+  WSpinner: { target: 'ESpinner', breakingChange: true, notes: 'blockClickOn → block; content → message; remove centered, container, scrim, transparent, paused; new: showCurve, showDuration, disabled' },
+  WSpinnerBlock: { target: 'ESpinnerBlock' },
+  WSpinnerSize: { target: 'ESpinnerSize' },
+  WSpinnerStyles: { target: 'ESpinnerStyles' },
+
+  // Notifications
+  WToast: { target: 'EToast' },
+  WToastContext: { target: 'EToastContext' },
+  WTooltip: { target: 'ETooltip', notes: 'tooltipPosition → direction; tooltipDelay (int ms) → showDelay (Duration); remove tooltipMarquee, tooltipWidth; new: fadeInDuration, fadeOutDuration, padding' },
+  WTooltipPosition: { target: 'ETooltipPosition' },
+  WTooltipType: { target: 'ETooltipType' },
+
+  // Tabs
+  WTabs: { target: 'ETabs', notes: 'wTabController → eTabController' },
+  WTabController: { target: 'ETabController' },
+
+  // Text
+  WHeading: { target: 'EHeading', notes: 'WHeadingMarqueeOn → EHeadingMarqueeOn' },
+  WHeadingMarqueeOn: { target: 'EHeadingMarqueeOn' },
+  WBodyText: { target: 'EBodyText', notes: 'WBodyTextSize → EBodyTextSize' },
+  WBodyTextSize: { target: 'EBodyTextSize' },
+  WBodyTextStyles: { target: 'EBodyTextStyles' },
+  WMarquee: { target: 'EMarquee', notes: 'WMarqueeAlign → EMarqueeAlign' },
+  WMarqueeAlign: { target: 'EMarqueeAlign' },
+
+  // Input
+  WInput: { target: 'EInput', notes: 'WInputSize → EInputSize; WInputType → EInputType; WInputPopupType → EInputPopupType' },
+  WSlider: { target: 'ESlider', notes: 'WSliderOrientation → ESliderOrientation; WSliderTooltipPosition → ESliderTooltipPosition' },
+  WSliderOrientation: { target: 'ESliderOrientation' },
+  WSliderTooltipPosition: { target: 'ESliderTooltipPosition' },
+
+  // Progress
+  WProgressBar: { target: 'EProgressBar', notes: 'WProgressBarOrientation → EProgressBarOrientation' },
+  WProgressBarOrientation: { target: 'EProgressBarOrientation' },
+  WProgressButton: { target: 'EProgressButton' },
+
+  // Item variants
+  WIconItem: { target: 'EIconItem', notes: 'WIconItemLabelOn → EIconItemLabelOn; WIconItemTitleOn → EIconItemTitleOn' },
+  WIconItemStyles: { target: 'EIconItemStyles' },
+  WIconItemLabelOn: { target: 'EIconItemLabelOn' },
+  WIconItemTitleOn: { target: 'EIconItemTitleOn' },
+  WImageItem: { target: 'EImageItem' },
+  WImageItemRatio: { target: 'EImageItemRatio' },
+  WImageItemStyles: { target: 'EImageItemStyles' },
+  WMediaItem: { target: 'EMediaItem' },
+  MediaType: { target: 'EMediaType' },
+
+  // Carousel
+  WCarousel: { target: 'ECarousel' },
+  WAnimatedCarousel: { target: 'EAnimatedCarousel' },
+  WAnimatedCarouselController: { target: 'EAnimatedCarouselController' },
+  WAnimatedCarouselState: { target: 'EAnimatedCarouselState' },
+  AnimatedCarouselItemConfig: { target: 'EAnimatedCarouselItemConfig' },
+  WAnimatedCarouselSlider: { target: 'EAnimatedCarouselSlider' },
+  WAnimatedCarouselSliderController: { target: 'EAnimatedCarouselSliderController' },
+  WAnimatedCarouselSliderState: { target: 'EAnimatedCarouselSliderState' },
+  WAnimatedCarouselSliderItemConfig: { target: 'EAnimatedCarouselSliderItemConfig' },
+
+  // Scroll
+  WScroller: { target: 'EScroller' },
+
+  // Focus
+  WFocusEffect: { target: 'EFocusEffect' },
+  WFocusEffectType: { target: 'EFocusEffectType' },
+  WFocusRingProperty: { target: 'EFocusRingProperty' },
+  WFocusZoomProperty: { target: 'EFocusZoomProperty' },
+  WFocusable: { target: 'EFocusable' },
+  WFocusableScope: { target: 'EFocusableScope' },
+  FocusRootScope: { target: 'EFocusRootScope' },
+  FocusScrollConfig: { target: 'EFocusScrollConfig' },
+  AlignFocusedElement: { target: 'EAlignFocusedElement' },
+  FiveWaysNavigationTraversalPolicy: { target: 'EFiveWaysTraversalPolicy', notes: 'Verify class name in source — may differ' },
+  FocusNavigationPointerLocking: { target: 'EFocusNavigationPointerLocking' },
+  FocusUtility: { target: 'EFocusUtility' },
+
+  // Guide
+  WKeyGuide: { target: 'EKeyGuide' },
+  WKeyGuideItem: { target: 'EKeyGuideItem' },
+  WKeyGuideController: { target: 'EKeyGuideController' },
+  WActionGuide: { target: 'EActionGuide' },
+
+  // Animation helpers
+  WAnimatedOpacity: { target: 'EAnimatedOpacity' },
+  WAnimatedPosition: { target: 'EAnimatedPosition' },
+  WAnimatedRotation: { target: 'EAnimatedRotation' },
+  WAnimatedScale: { target: 'EAnimatedScale' },
+
+  // Pickers
+  WDatePicker: { target: 'EDatePicker' },
+  WDayPicker: { target: 'EDayPicker' },
+  WTimePicker: { target: 'ETimePicker' },
+
+  // Misc
+  WReorderableListView: { target: 'EReorderableListView' },
+  ReorderableController: { target: 'EReorderableController' },
+  WPointerAndKeysHandler: { target: 'EPointerAndKeysHandler' },
+  GlobalKeyHandler: { target: 'EGlobalKeyHandler' },
+  WebOSKeyCodes: { target: 'EWebOSKeyCodes' },
+
+  // Design tokens
+  WColorTokens: { target: 'EColorTokens' },
+  WFontTokens: { target: 'EFontTokens' },
+  WRadiusTokens: { target: 'ERadiusTokens' },
+  WSpaceTokens: { target: 'ESpaceTokens' },
+  WCurveTokens: { target: 'ECurveTokens' },
+  WDurationTokens: { target: 'EDurationTokens' },
+  WTheme: { target: 'ETheme' },
+  WFont: { target: 'EFont' },
+
+  // Panels
+  WPanels: { target: 'EPanels' },
+  WFixedPopupPanels: { target: 'EFixedPopupPanels' },
+
+  // Popup menus
+  WPopupMenu: { target: 'EPopupMenu' },
+  WSettingPopup: { target: 'ESettingPopup' },
+  WPopUpMenuButton: { target: 'EPopUpMenuButton' },
+  WPopUpMenuItem: { target: 'EPopUpMenuItem' },
+  PopupMenuController: { target: 'EPopupMenuController' },
+  PopupMenuScrimType: { target: 'EPopupMenuScrimType' },
+
+  // Voice / accessibility
+  WVoiceControl: { target: 'EVoiceControl' },
+  VoiceControlProperties: { target: 'EVoiceControlProperties' },
+
+  // Full-screen popup / layered popup
+  WFullScreenPopup: { target: 'EFullScreenPopup', notes: 'Verify — may be EWizardPanels or EFlexiblePopupPanels' },
+  WLayeredPopup: { target: 'ELayeredPopup', notes: 'Verify class name in source' },
+
+  // Scrollable / hover scroll
+  WScrollable: { target: 'EScrollable' },
+
+  // Other
+  ButtonSize: { target: 'EButtonSize' },
+  ButtonIcon: { target: 'EButtonIcon' },
+  FocusableWidget: { target: 'EFocusableWidget' },
+  ColorState: { target: 'EColorState' },
+  VisibleOnFocus: { target: 'EVisibleOnFocus' },
+};
+
+export const paramChanges: Record<string, ParamChange> = {
+  WButton: {
+    removed: ['keepChild', 'originScale', 'onKey'],
+    renamed: {
+      animation: 'enableAnimation',
+      semanticButtonLabel: 'semanticsLabel',
+    },
+    notes: 'child (Widget) → text (String) for simple text buttons, or buildChildWidget: (context, state) => Widget for complex children. ButtonSize → EButtonSize.',
+  },
+  WVirtualList: {
+    removed: ['hoverToScroll', 'noScrollByWheel', 'onScroll', 'onScrollStart', 'onScrollStop', 'enableVoiceControl', 'groupLabel'],
+    added: ['itemHeight (required, double — item height in logical pixels)'],
+    notes: 'itemBuilder signature changes: (BuildContext, int) → (BuildContext, int, FocusNode?). The focusNode MUST be passed to the child widget (focus-passthrough rule).',
+  },
+  WSpinner: {
+    removed: ['centered', 'container', 'scrim', 'transparent', 'paused'],
+    renamed: {
+      blockClickOn: 'block',
+      content: 'message',
+    },
+    added: ['showCurve', 'showDuration', 'disabled'],
+  },
+  WTooltip: {
+    removed: ['tooltipMarquee', 'tooltipWidth'],
+    renamed: {
+      tooltipPosition: 'direction',
+      tooltipDelay: 'showDelay',
+    },
+    added: ['fadeInDuration', 'fadeOutDuration', 'padding'],
+    notes: 'tooltipDelay was int (milliseconds); showDelay is Duration. tooltipPosition was WTooltipPosition; direction is ETooltipDirection.',
+  },
+  WTabs: {
+    renamed: { wTabController: 'eTabController' },
+  },
+  WSwitchItem: {
+    removed: ['centered', 'inline', 'slotAfter', 'slotBefore'],
+    added: ['focused'],
+    notes: 'ESwitchItem does not support children param. Wrap with EItem if label or slot is needed.',
+  },
+};
