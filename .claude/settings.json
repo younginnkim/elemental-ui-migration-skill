@@ -10,5 +10,6 @@
     "additionalDirectories": [
       "/home/younginkim"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true
 }

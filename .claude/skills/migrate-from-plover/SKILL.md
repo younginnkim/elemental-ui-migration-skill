@@ -8,7 +8,7 @@ argument-hint: "[dart_file_or_directory]"
 
 Migrate Flutter Dart code from the Plover widget library (`package:plover`) to Elemental UI (`package:elutter`).
 
-Handles import replacement, widget renaming (W→E prefix), enum renaming, and parameter changes including breaking changes.
+Handles import replacement, widget renaming (per mapping table), enum renaming, and parameter changes (including breaking changes).
 
 ## Usage
 
@@ -23,84 +23,230 @@ Handles import replacement, widget renaming (W→E prefix), enum renaming, and p
 /migrate-from-plover lib/
 ```
 
-**Input:** `$ARGUMENTS` — path to a Dart file or directory. If empty, uses the currently open file in the IDE. Falls back to `lib/` if no IDE file is open.
+**Input:** `$ARGUMENTS` — Dart file or directory path. If empty, use the currently open file in the IDE; if none, fall back to `lib/`.
 
 ---
 
 ## Steps
 
-Follow these steps in order. Complete each before moving to the next.
+Run in order. Complete each step before moving to the next.
 
-### Step 1 — Scan for Plover usage
+### Step 1 — Detect Plover usage (compiler-based)
 
-Determine the target path:
-1. If `$ARGUMENTS` is provided, use it.
-2. Otherwise, use the currently open file in the IDE (available as `ide_opened_file` in context).
-3. If neither is available, fall back to `lib/`.
+**1-1. Edit pubspec.yaml** — apply both changes in a single Edit.
 
-**If the target is a single file**, call directly:
+1. Remove `plover:` from `dependencies:`
+2. Add `elutter:` git dependency (skip if already present):
+```yaml
+  elutter:
+    git:
+      url: ssh://wall.lge.com/module/elutter
+      ref: develop
 ```
-scanDartFile({ path: <file> })
+This step is part of the migration; do not revert.
+
+**1-2. Refresh dependencies and resolve version conflicts**
+
+Loop up to 5 times:
+```
+flutter pub get 2>&1
+```
+Fall back to `dart pub get 2>&1` if `flutter` is not available.
+
+- **Success** → proceed to next step
+- **Failure + "version solving failed"**:
+  - Parse the conflicting package name and the version elutter requires from the error.
+    Example: `Because myapp depends on flutter_lints ^2.0.0 and elutter depends on flutter_lints ^3.0.0`
+    → update `flutter_lints` to `^3.0.0`
+  - Replace the constraint in pubspec.yaml with the version elutter requires and retry.
+- **Still failing after 5 tries** → print the error and stop. Ask the user to resolve manually.
+
+**1-3. Collect compiler errors**
+```
+flutter analyze --format=machine 2>&1
+```
+Fall back to `dart analyze --format=machine 2>&1` if `flutter` is unavailable.
+
+Filter Plover-related errors only:
+- `URI_DOES_NOT_EXIST` → import line (target of Step 2-1)
+- `UNDEFINED_CLASS`, `UNDEFINED_IDENTIFIER` → widget/enum usage lines
+
+Machine-format example:
+```
+ERROR|COMPILE_TIME_ERROR|URI_DOES_NOT_EXIST|lib/views/home.dart|1|8|46|The import target doesn't exist.
+ERROR|COMPILE_TIME_ERROR|UNDEFINED_CLASS|lib/views/home.dart|45|5|7|Undefined class 'WButton'.
+ERROR|COMPILE_TIME_ERROR|UNDEFINED_IDENTIFIER|lib/views/home.dart|46|3|12|Undefined name 'WAlertType'.
+```
+Field order: `severity|type|code|file|line|col|length|message`
+
+If zero errors, the project uses no Plover — stop.
+
+**1-4. Extract widget names and look up mapping**
+- Parse identifiers inside single quotes from `UNDEFINED_CLASS` / `UNDEFINED_IDENTIFIER` messages.
+  Example: `Undefined class 'WButton'` → `WButton`
+- For each unique identifier, call `getWidgetDetail(name)`
+  → returns `target`, `breakingChange`, `deprecated`, `notes`.
+
+**1-5. Structure the result** (grouped by file, used as Step 2 input)
+```
+{
+  "lib/views/home.dart": [
+    { widget: "WButton", line: 45, target: "EButton", breakingChange: true },
+    { widget: "WAlert",  line: 52, target: "EAlert",  breakingChange: false },
+  ],
+  ...
+}
 ```
 
-**If the target is a directory**, pre-filter with Grep first to avoid scanning every dart file:
-1. Use the Grep tool to search for `package:plover` in `*.dart` files under the directory — this returns only the files that actually import Plover
-2. Call `scanDartFile({ path: <file> })` for each matched file individually
-3. Merge the results across all files before proceeding to Step 2
+### Step 2 — Apply migration
 
-This pre-filtering step is critical for large projects: scanning 300 dart files to find 20 that import Plover is wasteful; Grep + targeted scans is much faster.
+Apply changes in the order below for each file with Plover usage.
+**Minimize file Reads.** Step 1 already provides line numbers — don't Read the whole file.
 
-If the MCP is not available, use Glob + Read on only the Grep-matched files (not all dart files).
+**2-1. Replace import** (no Read needed)
+- Plover barrel import is always the same string — Edit directly:
+  - `old_string: "import 'package:plover/plover.dart';"` → `new_string: "import 'package:elutter/elutter.dart';"`
 
-### Step 2 — Apply migrations
+**2-2. Replace widget and enum names**
+- For each identifier in the Step 1 result, use the `target` field as the replacement name.
+  Do NOT infer via the W→E prefix rule (e.g., `WFullScreenPopup` → `EWizardPanels`, not `EFullScreenPopup`).
+- `deprecated: false`: Edit with `replace_all: true` (no Read needed)
+  - Example: `old_string: "WButton"`, `new_string: "EButton"`, `replace_all: true` ← `new_string` is always the `target` from the scan result
+- `deprecated: true`:
+  - Call `elemental-ui-mcp.getWidget(target)` → check `deprecated`, `deprecatedNote`, `aliases` for the recommended alternative.
+  - **If an alternative exists** (listed in `aliases` or in the deprecated table below):
+    - Call `elemental-ui-mcp.getWidget(alternative_name)` → get the alternative's full parameter list.
+    - Call `elemental-ui-migration-mcp.getFileSnippets({ path, lines })` to see the deprecated widget's constructor call site.
+    - Map parameters: deprecated widget params → alternative widget params 1:1.
+      - Renamed params → use the new name.
+      - Params missing in the alternative → annotate `// TODO(migrate): <paramName> removed`.
+      - Structural mismatch preventing auto-mapping → add `// TODO(migrate): manual refactor needed`.
+    - Replace widget name + params with complete alternative code (no TODO when fully mapped).
+    - Replace related controller classes too (e.g., `ETabController` → `ETabLayoutController`).
+  - **If no alternative exists** (table below says "manual refactor"):
+    - Pass 1 (rename): Plover name → Elemental UI name, `replace_all: true`.
+    - Pass 2 (TODO on constructor calls only): `old_string: "EXxx("` → `new_string: "EXxx( // TODO(migrate): no direct replacement — manual refactor"`, `replace_all: true`.
+    - Type annotations (`EXxx? x`) receive Pass 1 only, renamed without TODO — intended behavior.
 
-For each file with Plover usage, apply changes in this order using the **minimum reads possible**.
-`scanDartFile` already gave you line numbers — use them. Do NOT read the full file.
+**2-3. Parameter changes for breaking-change widgets**
+- Param diffs are in the [Parameter changes](#parameter-changes) section — `getWidgetDetail()` not required.
+- For files with breaking changes, call `getFileSnippets({ path, lines })` (use line numbers from Step 1).
+- Build `old_string` from the returned `context` and apply a targeted Edit.
 
-**2-1. Replace import** (read top only)
-- Read only the first 10 lines of the file to locate the import
-- Edit: `import 'package:plover/plover.dart'` → `import 'package:elutter/elutter.dart'`
+**2-4. Mark manual-handling items**
+- Call `getFileSnippets({ path, lines })` (use line numbers from Step 1).
+- Build `old_string` from `context` and Edit to add `// TODO(migrate): <reason>`.
 
-**2-2. Rename widgets and enums** (no read needed)
-- For each Plover identifier in the Step 1 results, use Edit with `replace_all: true`
-- Example: `old_string: "WButton"`, `new_string: "EButton"`, `replace_all: true`
-- Do NOT read the file first — Edit handles replacement without a full read
-- Apply the [Widget Mapping](#widget-mapping) table
+### Step 3 — App Foundation migration (EApp + EAppMain)
 
-**2-3. Apply parameter changes for breaking-change widgets** (targeted window reads)
-- Parameter diffs are in the [Parameter Changes](#parameter-changes) section of this skill — do NOT call `getWidgetMigration()`
-- For each breaking-change occurrence, you already know its line number from Step 1
-- Read only a small window: `offset: <lineNum - 5>`, `limit: 40` — enough to see the full widget call
-- Edit only that section; do not read the full file
+Convert app-level structure (not present in Plover) to the standard Elemental UI pattern.
 
-**2-4. Mark manual items** (targeted window reads)
-- Same approach: use line numbers from Step 1 to read small windows
-- Add `// TODO(migrate): <reason>` comment on the relevant line
+**3-1. Locate entry point**
 
-### Step 3 — TV focus rule check
+Identify the file with either:
+```
+find lib/ -name "main.dart"
+grep -rl "void main()" lib/ --include="*.dart"
+```
+Check for `runApp(` usage. If absent, skip this Step.
 
-After migrating, verify these rules in each file:
+Read the file to find where `runApp` is called:
+- **Pattern A**: `runApp` is called directly at the top level of `main()` → can convert to `EAppMain.run`.
+- **Pattern B**: `runApp` is nested inside a callback/listener/Future → `EAppMain.run` not applicable; insert `EApp` only.
+
+**3-2. Look up patterns and parameters**
+
+Only if an entry point exists:
+- `elemental-ui-mcp.getPatterns(keyword: 'App Entry Point')` → canonical conversion patterns
+- `elemental-ui-mcp.getWidget('EApp')` → full EApp parameter list
+- `elemental-ui-mcp.getWidget('EAppMain')` → EAppMain.run usage
+
+**3-3. Convert entry point**
+
+Handle per pattern.
+
+**Pattern A — convert to EAppMain.run** (`runApp` called at top of `main()`):
+
+```dart
+// before
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MyApp());
+}
+
+// after
+void main() => EAppMain.run(const EApp(child: MyApp()));
+```
+
+With i18n (`LocalizationDelegate`) → replace with `EAppMain.run(EApp(...), i18nPath: 'assets/i18n', fallbackLocale: 'en')`.
+
+**Pattern B — insert EApp** (`runApp` nested in a callback/listener):
+
+`EAppMain.run` cannot be used. Insert `EApp` at the existing `runApp` call:
+
+```dart
+// before
+runApp(ProviderScope(child: LocalizedApp(delegate, const App())));
+
+// after — insert EApp immediately around the App widget
+runApp(ProviderScope(child: LocalizedApp(delegate, EApp(child: const App()))));
+```
+
+Migrating i18n (LocalizationDelegate → EApp built-in handling) requires rewriting the async init flow; leave a comment:
+```dart
+// TODO(migrate): complex async init — EAppMain.run not applicable.
+//   Consider restructuring to use EAppMain.run with i18nPath/fallbackLocale
+//   after refactoring the ProviderContainer listener pattern.
+```
+
+**3-4. Move MaterialApp parameters**
+
+If `MaterialApp(...)` exists inside the app widget, handle its parameters:
+
+| MaterialApp param | Action |
+|---|---|
+| `locale` | Move to EApp |
+| `localizationsDelegates` | Move to EApp |
+| `supportedLocales` | Move to EApp (prefer `supportedLocales` on EAppMain.run) |
+| `theme`, `darkTheme` | Move to EApp |
+| `debugShowCheckedModeBanner` | Remove (EApp handles it) |
+| `home`, `routes`, `onGenerateRoute`, etc. | Keep inside child + add `// TODO(migrate): routing stays in child — EApp does not manage navigation` |
+
+**3-5. Verify import**
+
+Confirm `import 'package:elutter/elutter.dart';` was added in Step 2. If not, add it.
+
+---
+
+### Step 4 — TV focus rule validation
+
+After migration, verify these rules per file. Full rules via `elemental-ui-mcp.getFocusRules()`:
 
 | Rule | Severity | Check |
 |---|---|---|
-| `focus-passthrough` | **critical** | `EVirtualList.itemBuilder` passes `focusNode` to child widget |
-| `no-nested-efocusable` | **critical** | No widget with internal focus wrapped in `EFocusable` |
+| `focus-passthrough` | **critical** | `EVirtualList.itemBuilder` forwards `focusNode` to the child widget |
+| `no-nested-efocusable` | **critical** | Widgets with internal focus are not wrapped in `EFocusable` |
 | `delegate-focus-events` | warning | Observation-only `EFocusable` has `focusOnTap: false, tapByEnter: false` |
-| `popup-focus-restore` | warning | Focus restored when popup closes |
+| `popup-focus-restore` | warning | Focus is restored when a popup closes |
 
-### Step 4 — Report
+### Step 5 — Report
 
-Output a summary:
-- Files modified
+Print a table summary of:
+- Number of modified files
 - Total identifiers replaced
-- Breaking changes that required manual edits
+- Breaking changes requiring manual edits
+- Widgets renamed to a deprecated target (renamed to `@Deprecated` Elemental UI target)
 - Remaining `// TODO(migrate):` items
 
 ---
 
-## Widget Mapping
+## Widget mapping
 
-Simple W→E prefix rename. All identifiers below:
+Each Plover identifier maps to a specific Elemental UI target defined in the mapping table.
+**Do NOT infer via the W→E prefix rule** — always use `target` from the scan result.
+(e.g., `WFullScreenPopup` → `EWizardPanels`, `WLayeredPopup` → `EFlexiblePopupPanels`, `MediaType` → `EMediaType`)
+
+Primary identifiers:
 
 | Plover | Elemental UI |
 |---|---|
@@ -114,108 +260,152 @@ Simple W→E prefix rename. All identifiers below:
 | `WSwitchItem` | `ESwitchItem` ⚠ |
 | `WDropdown` | `EDropdown` |
 | `WVirtualList` | `EVirtualList` ⚠ |
-| `WSpinner` | `ESpinner` ⚠ |
-| `WToast` / `WToastContext` | `EToast` / `EToastContext` |
+| `WVerticalToHorizontalWheelConverter` | `EVerticalToHorizontalWheelConverter` |
+| `WSpinner` | `ESpinner` |
+| `WToast` / `WToastContext` | `EToast` / `EToastContext` † |
 | `WTooltip` | `ETooltip` |
-| `WTabs` / `WTabController` | `ETabs` / `ETabController` |
+| `WTabs` / `WTabController` | `ETabs` / `ETabController` † |
 | `WHeading` | `EHeading` |
 | `WBodyText` | `EBodyText` |
-| `WInput` | `EInput` |
+| `WInput` | `EInput` † |
 | `WSlider` | `ESlider` |
 | `WProgressBar` | `EProgressBar` |
-| `WProgressButton` | `EProgressButton` |
+| `WProgressButton` | `EProgressButton` † |
 | `WIconItem` | `EIconItem` |
 | `WImageItem` | `EImageItem` |
-| `WMediaItem` | `EMediaItem` |
-| `WCarousel` | `ECarousel` |
+| `WMediaItem` | `EMediaItem` † |
+| `WCarousel` | `ECarousel` † |
 | `WAnimatedCarouselSlider` | `EAnimatedCarouselSlider` |
 | `WMarquee` | `EMarquee` |
 | `WScroller` | `EScroller` |
 | `WFocusEffect` | `EFocusEffect` |
 | `WFocusable` | `EFocusable` |
-| `WKeyGuide` | `EKeyGuide` |
+| `WKeyGuide` / `WKeyGuideItem` / `WKeyGuideController` | `EKeyGuide` / `EKeyGuideItem` / `EKeyGuideController` † |
+| `WFullScreenPopup` | `EWizardPanels` |
+| `WLayeredPopup` | `EFlexiblePopupPanels` |
 | `WActionGuide` | `EActionGuide` |
 | `WColorTokens` / `WFontTokens` / `WSpaceTokens` | `EColorTokens` / `EFontTokens` / `ESpaceTokens` |
 | `WTheme` | `ETheme` |
 | `ButtonSize` | `EButtonSize` |
 
-⚠ = Breaking change — see Parameter Changes below.
+⚠ = Breaking change — see Parameter changes section below.
+† = Deprecated target — see Deprecated migration targets section below.
 
-All enum values follow the same prefix change (e.g. `WAlertType.overlay` → `EAlertType.overlay`).
+All enum values follow the same prefix rule (e.g., `WAlertType.overlay` → `EAlertType.overlay`).
+
+**Types without `E` prefix (exceptions)** — some utility types used with `FocusScrollConfig` keep the original name:
+
+| Identifier | Note |
+|---|---|
+| `AlignFocusedElement` | Type for `FocusScrollConfig.alignFocusedElement`. Not `EAlignFocusedElement`. |
 
 ---
 
-## Parameter Changes
+## Deprecated migration targets
+
+Handling rules are in Step 2-2. If an alternative exists, replace directly; otherwise rename + TODO.
+
+| Elemental UI | Deprecated since | Recommended alternative |
+|---|---|---|
+| `ETabs` | 2025-06-30 | Use `ETabLayout` + `ETabLayoutController` |
+| `ETabController` | 2025-05-19 | Use `ETabLayoutController` |
+| `EInput` | 2025-06-30 | Replace with `EInputField` + `EInputPopup` |
+| `ERadioButton` | — | Use `ERadioItem` |
+| `ESwitch` | — | Use `ESwitchItem` or `ESwitchBase` |
+| `EToast` | — | Use `EAlert` (overlay mode) or `ETooltip` |
+| `EToastContext` | — | Use `EAlert` (overlay mode) |
+| `ECarousel` | 2025-06-30 | Use `EAnimatedCarousel` or `EAnimatedCarouselSlider` |
+| `EProgressButton` | 2025-06-30 | Use `EButton` + `EProgressBar` |
+| `EMediaItem` | 2025-06-30 | Use `EImageItem` or `EGridItem` |
+| `EKeyGuide` | 2025-06-30 | Use `EQuickGuidePanels` for step-by-step guide flows |
+| `EKeyGuideItem` | 2025-06-30 | Use `EQuickGuidePanels` with `EQuickGuidePanel` children |
+| `EKeyGuideController` | 2025-06-30 | Use `EActionGuide` or `EQuickGuidePanels` |
+
+**Deprecated parameters** (widget itself not deprecated):
+
+| Widget | Deprecated param | Alternative |
+|---|---|---|
+| `EPopup` | `open` (since 2025-04-18) | Use `EPopupController` |
+| `EAlert` | `open` (since 2025-04-18) | Use alert controller pattern |
+| `EPanels` | `index` | Use `EPanelsController.index` |
+
+---
+
+## Parameter changes
 
 ### WButton → EButton ⚠
 
-| Change | Before | After |
+| Type | Before | After |
 |---|---|---|
 | Child widget | `child: Text('OK')` | `text: 'OK'` or `buildChildWidget: (ctx, s) => Text('OK')` |
 | Animation toggle | `animation: true` | `enableAnimation: true` |
 | Button size | `size: ButtonSize.small` | `size: EButtonSize.small` |
 | Semantics | `semanticButtonLabel: 'x'` | `semanticsLabel: 'x'` |
-| Removed | `keepChild`, `originScale`, `onKey` | delete these params |
+| Removed | `keepChild`, `originScale`, `onKey` | remove param |
 
 ### WVirtualList → EVirtualList ⚠
 
-| Change | Before | After |
+| Type | Before | After |
 |---|---|---|
-| itemBuilder | `(context, index)` | `(context, index, focusNode)` |
-| New required | — | `itemHeight: 120` (double, px) |
-| Removed | `hoverToScroll`, `noScrollByWheel`, `onScroll`, `onScrollStart`, `onScrollStop` | delete |
-| Focus rule | — | pass `focusNode` to child widget |
+| 3rd itemBuilder arg | `isFocused: bool` | `focusNode: EFocusNode` |
+| New optional param | — | `itemSize: double?` (auto-estimated when null) |
+| New optional param | — | `hoverScrollSpeed`, `padding`, `onFocusChangeItem`, `alignFocusedElement` |
+| Focus rule | — | `focusNode` MUST be forwarded to the child |
 
-### WSpinner → ESpinner ⚠
+### WSpinner → ESpinner
 
-| Change | Before | After |
+Param names unchanged — only enum prefixes change:
+
+| Type | Before | After |
 |---|---|---|
-| Block param | `blockClickOn: WSpinnerBlock.screen` | `block: ESpinnerBlock.screen` |
-| Message | `content: Text('Loading')` | `message: Text('Loading')` |
-| Removed | `centered`, `container`, `scrim`, `transparent`, `paused` | delete |
-| New | — | `showCurve`, `showDuration`, `disabled` |
+| Block type | `blockClickOn: WSpinnerBlock.screen` | `blockClickOn: ESpinnerBlock.screen` |
+| Size type | `size: WSpinnerSize.large` | `size: ESpinnerSize.large` |
+| Size default | `WSpinnerSize.small` | `ESpinnerSize.large` |
+| transparent default | `false` | `true` |
 
 ### WSwitchItem → ESwitchItem ⚠
 
-| Change | Before | After |
+| Type | Before | After |
 |---|---|---|
-| Removed | `centered`, `inline`, `slotAfter`, `slotBefore` | delete |
-| Children | `children: ['Label']` | not supported — use `EItem` wrapper |
+| Removed | `centered`, `inline`, `slotAfter`, `slotBefore` | remove param |
+| children | `children: ['Label']` | unsupported — wrap with `EItem` |
 | New | — | `focused` |
 
 ### WTooltip → ETooltip
 
-| Change | Before | After |
-|---|---|---|
-| Position | `tooltipPosition: WTooltipPosition.above` | `direction: ETooltipDirection.above` |
-| Delay | `tooltipDelay: 500` (int ms) | `showDelay: Duration(milliseconds: 500)` |
-| Removed | `tooltipMarquee`, `tooltipWidth` | delete |
+Param names unchanged — only enum prefixes change (W→E). New `ETooltipPosition` values: `aboveCenter`, `aboveLeft`, `aboveRight`, `belowCenter`, `belowLeft`, `belowRight`, `leftBottom`, `leftMiddle`, `leftTop`, `rightBottom`, `rightMiddle`, `rightTop`.
 
 ### WTabs → ETabs
 
 ```dart
-// Before
+// before
 WTabs(wTabController: myController, ...)
-// After
+// after
 ETabs(eTabController: myController, ...)
 ```
 
 ---
 
-## Manual Review Items (TODO tags)
+## Manual-review items (TODO tags)
 
-Add `// TODO(migrate): <reason>` for these patterns — they cannot be auto-converted:
+Add `// TODO(migrate): <reason>` for patterns that cannot be auto-converted:
 
 1. `WButton(child: complexWidget)` — convert to `buildChildWidget:`
-2. `WVirtualList` itemBuilder — add third `focusNode` argument
-3. `WSpinner(container: ...)` — `ESpinner` has no container param; use `Stack`/`Overlay`
-4. `WSwitchItem(children: ...)` — restructure as `EItem` + `ESwitchItem`
-5. `WPopup` — large API; verify each param manually
-6. `FiveWaysNavigationTraversalPolicy` — verify new class name in source
+2. `WVirtualList` itemBuilder — change 3rd arg from `isFocused: bool` to `focusNode: EFocusNode`; forward focusNode to child
+3. `WSwitchItem(children: ...)` — rewrite as `EItem` + `ESwitchItem`
+4. `WPopup` — broad API surface; verify each param manually
+5. `FiveWaysNavigationTraversalPolicy` — verify new class name in source
+6. `WInput` — replace with `EInputField` + `EInputPopup`
+7. `WKeyGuide` / `WKeyGuideItem` — replace with `EQuickGuidePanels` + `EQuickGuidePanel`
+8. `WFullScreenPopup` — replace with `EWizardPanels`; no separate controller (use callbacks)
+9. `WLayeredPopup` — replace with `EFlexiblePopupPanels`; `WLayeredPopupController` → `FlexiblePopupPanelsController`
+10. `EPopup(open: ...)` — replace `open` with `EPopupController`
+11. `EAlert(open: ...)` — replace `open` with controller pattern
+12. `EPanels(index: ...)` — replace `index` with `EPanelsController.index`
 
 ---
 
-## Source Paths
+## Source paths
 
 - Plover source: `/home/younginkim/project/Elemental_UI/flutter_app_components/lib/`
 - Elemental UI source: `/home/younginkim/project/Elemental_UI/elemental_widgets/lib/elutter/`

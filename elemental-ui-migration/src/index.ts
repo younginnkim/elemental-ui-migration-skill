@@ -1,42 +1,19 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { widgetMapping, paramChanges } from './mapping.js';
-import { scanPath } from './scanner.js';
+import { widgetMapping } from './mapping.js';
+import { getFileSnippets } from './scanner.js';
 
 const server = new McpServer({
   name: 'elemental-ui-migration',
   version: '1.0.0',
 });
 
-// ── Tool 1: List all widget mappings ─────────────────────────────────────────
-server.registerTool(
-  'listWidgetMappings',
-  {
-    description: 'List all Plover → Elemental UI widget/enum/class mappings. Optionally filter to only breaking changes.',
-    inputSchema: {
-      breakingOnly: z.boolean().optional().describe('If true, return only widgets with breaking changes'),
-    },
-  },
-  async ({ breakingOnly }) => {
-    const entries = Object.entries(widgetMapping)
-      .filter(([, v]) => !breakingOnly || v.breakingChange)
-      .map(([plover, info]) => ({
-        plover,
-        elutter: info.target,
-        breakingChange: info.breakingChange ?? false,
-        notes: info.notes ?? '',
-      }));
 
-    return {
-      content: [{ type: 'text', text: JSON.stringify(entries, null, 2) }],
-    };
-  },
-);
-
-// ── Tool 2: Get migration details for a specific widget ───────────────────────
+// 특정 Plover 위젯의 상세 마이그레이션 정보 (대상 이름, 파라미터 변경, 주의사항).
+// Step 2에서 breaking change 위젯의 파라미터 변경 사항 확인 시 사용.
 server.registerTool(
-  'getWidgetMigration',
+  'getWidgetDetail',
   {
     description: 'Get detailed migration info for a specific Plover widget or class — target name, parameter changes, breaking changes, and notes.',
     inputSchema: {
@@ -60,7 +37,7 @@ server.registerTool(
       };
     }
 
-    const params = paramChanges[name] ?? null;
+    const params = mapping.paramChanges ?? null;
 
     return {
       content: [{
@@ -69,6 +46,8 @@ server.registerTool(
           plover: name,
           elutter: mapping.target,
           breakingChange: mapping.breakingChange ?? false,
+          deprecated: mapping.deprecated ?? false,
+          deprecatedNote: mapping.deprecatedNote ?? null,
           notes: mapping.notes ?? null,
           paramChanges: params,
         }, null, 2),
@@ -77,71 +56,31 @@ server.registerTool(
   },
 );
 
-// ── Tool 3: Scan a Dart file or directory ────────────────────────────────────
+// Dart 파일의 특정 라인 번호 주변 ±5줄 스니펫 반환.
+// Step 2에서 breaking change / deprecated 위젯 주변 코드 맥락 확인 시 사용.
 server.registerTool(
-  'scanDartFile',
+  'getFileSnippets',
   {
-    description: 'Scan a Dart file or directory for Plover widget usage. Returns a structured list of all Plover identifiers found, their line numbers, migration targets, and which ones have breaking changes.',
+    description: 'Get source code snippets (±5 lines) around specific line numbers in a Dart file. Use when you need context around breaking-change or manual-TODO occurrences for targeted edits.',
     inputSchema: {
-      path: z.string().describe('Absolute path to a .dart file or directory (e.g. lib/views/home.dart or lib/)'),
+      path: z.string().describe('Absolute path to a .dart file'),
+      lines: z.array(z.number()).describe('1-indexed line numbers to fetch context around'),
     },
   },
-  async ({ path }) => {
+  async ({ path, lines }) => {
     try {
-      const results = await scanPath(path);
-
-      if (results.length === 0) {
-        return {
-          content: [{ type: 'text', text: 'No Plover usage found in the specified path.' }],
-        };
-      }
-
-      const totalWidgets = results.reduce((sum, r) => sum + r.widgetsFound.length, 0);
-      const totalBreaking = results.reduce((sum, r) => sum + r.breakingChangeCount, 0);
-
+      const snippets = await getFileSnippets(path, lines);
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            scannedFiles: results.length,
-            totalIdentifiers: totalWidgets,
-            totalBreakingChanges: totalBreaking,
-            files: results,
-          }, null, 2),
-        }],
+        content: [{ type: 'text', text: JSON.stringify(snippets, null, 2) }],
       };
     } catch (err) {
       return {
-        content: [{ type: 'text', text: `Error scanning path: ${(err as Error).message}` }],
+        content: [{ type: 'text', text: `Error reading file: ${(err as Error).message}` }],
       };
     }
   },
 );
 
-// ── Tool 4: Get all breaking changes ─────────────────────────────────────────
-server.registerTool(
-  'getBreakingChanges',
-  {
-    description: 'Get all widgets with breaking changes that require manual code changes beyond a simple W→E prefix rename.',
-    inputSchema: {},
-  },
-  async () => {
-    const breaking = Object.entries(widgetMapping)
-      .filter(([, v]) => v.breakingChange)
-      .map(([plover, info]) => ({
-        plover,
-        elutter: info.target,
-        notes: info.notes,
-        paramChanges: paramChanges[plover] ?? null,
-      }));
-
-    return {
-      content: [{ type: 'text', text: JSON.stringify(breaking, null, 2) }],
-    };
-  },
-);
-
-// ── Start server ──────────────────────────────────────────────────────────────
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -150,5 +89,5 @@ async function main() {
 
 main().catch(err => {
   console.error('Fatal error:', err);
-  process.exit(1);
+  // process.exit(1);
 });

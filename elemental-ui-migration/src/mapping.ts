@@ -1,19 +1,32 @@
 export interface WidgetMapping {
   target: string;
   breakingChange?: boolean;
+  deprecated?: boolean;
+  deprecatedNote?: string;
   notes?: string;
-}
-
-export interface ParamChange {
-  removed?: string[];
-  renamed?: Record<string, string>;
-  added?: string[];
-  notes?: string;
+  paramChanges?: {
+    removed?: string[];
+    renamed?: Record<string, string>;
+    added?: string[];
+    notes?: string;
+  };
 }
 
 export const widgetMapping: Record<string, WidgetMapping> = {
   // Core widgets
-  WButton: { target: 'EButton', breakingChange: true, notes: 'child (Widget) → text (String) or buildChildWidget; animation → enableAnimation; ButtonSize → EButtonSize; remove keepChild, originScale, onKey' },
+  WButton: {
+    target: 'EButton',
+    breakingChange: true,
+    notes: 'child (Widget) → text (String) or buildChildWidget; animation → enableAnimation; ButtonSize → EButtonSize; remove keepChild, originScale, onKey',
+    paramChanges: {
+      removed: ['keepChild', 'originScale', 'onKey'],
+      renamed: {
+        animation: 'enableAnimation',
+        semanticButtonLabel: 'semanticsLabel',
+      },
+      notes: 'child (Widget) → text (String) for simple text buttons, or buildChildWidget: (context, state) => Widget for complex children. ButtonSize → EButtonSize.',
+    },
+  },
   WAlert: { target: 'EAlert', notes: 'WAlertType → EAlertType; WAlertImageType → EAlertImageType; new params: hideCurve, hideDuration, showCurve, showDuration' },
   WItem: { target: 'EItem', notes: 'New params: onHover, onFocusChange, itemColor' },
   WItemBase: { target: 'EItemBase' },
@@ -51,12 +64,21 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WCheckboxBase: { target: 'ECheckboxBase' },
   WCheckboxItem: { target: 'ECheckboxItem', notes: 'New params: checkboxSize, checkboxIconSize, isFocused, isOnTapDown, isOnTapUp' },
   WCheckboxItemStyles: { target: 'ECheckboxItemStyles' },
-  WRadioButton: { target: 'ERadioButton' },
+  WRadioButton: { target: 'ERadioButton', deprecated: true, deprecatedNote: 'Use ERadioItem instead' },
   WRadioItem: { target: 'ERadioItem', notes: 'New param: isFocused' },
   WRadioItemStyles: { target: 'ERadioItemStyles' },
-  WSwitch: { target: 'ESwitch' },
+  WSwitch: { target: 'ESwitch', deprecated: true, deprecatedNote: 'Use ESwitchItem or ESwitchBase instead' },
   WSwitchBase: { target: 'ESwitchBase' },
-  WSwitchItem: { target: 'ESwitchItem', breakingChange: true, notes: 'Remove centered, inline, slotAfter, slotBefore; children param not supported — use EItem wrapper' },
+  WSwitchItem: {
+    target: 'ESwitchItem',
+    breakingChange: true,
+    notes: 'Remove centered, inline, slotAfter, slotBefore; children param not supported — use EItem wrapper',
+    paramChanges: {
+      removed: ['centered', 'inline', 'slotAfter', 'slotBefore'],
+      added: ['focused'],
+      notes: 'ESwitchItem does not support children param. Wrap with EItem if label or slot is needed.',
+    },
+  },
   WSwitchItemStyles: { target: 'ESwitchItemStyles' },
 
   // Dropdown
@@ -66,26 +88,48 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WDropdownSize: { target: 'EDropdownSize' },
 
   // Virtual list
-  WVirtualList: { target: 'EVirtualList', breakingChange: true, notes: 'itemBuilder: (ctx, index) → (ctx, index, focusNode); itemHeight required; remove hoverToScroll, noScrollByWheel, onScroll, onScrollStart, onScrollStop' },
+  WVirtualList: {
+    target: 'EVirtualList',
+    breakingChange: true,
+    notes: 'itemBuilder: (ctx, index, isFocused: bool) → (ctx, index, focusNode: EFocusNode); new params: itemSize (optional double — auto-estimated if null), hoverScrollSpeed, padding, onFocusChangeItem, alignFocusedElement',
+    paramChanges: {
+      added: ['itemSize (optional double — item height/width, auto-estimated if null)', 'hoverScrollSpeed', 'padding', 'onFocusChangeItem', 'alignFocusedElement'],
+      notes: 'itemBuilder signature changes: (BuildContext, int, bool isFocused) → (BuildContext, int, EFocusNode focusNode). The focusNode MUST be passed to the child widget (focus-passthrough rule).',
+    },
+  },
   WVirtualListDirection: { target: 'EVirtualListDirection' },
   WVirtualListScrollbar: { target: 'EVirtualListScrollbar' },
 
   // Loading
-  WSpinner: { target: 'ESpinner', breakingChange: true, notes: 'blockClickOn → block; content → message; remove centered, container, scrim, transparent, paused; new: showCurve, showDuration, disabled' },
+  WSpinner: { target: 'ESpinner', notes: 'WSpinnerBlock → ESpinnerBlock; WSpinnerSize → ESpinnerSize; size default changed from small → large; transparent default changed from false → true' },
   WSpinnerBlock: { target: 'ESpinnerBlock' },
   WSpinnerSize: { target: 'ESpinnerSize' },
   WSpinnerStyles: { target: 'ESpinnerStyles' },
 
   // Notifications
-  WToast: { target: 'EToast' },
-  WToastContext: { target: 'EToastContext' },
-  WTooltip: { target: 'ETooltip', notes: 'tooltipPosition → direction; tooltipDelay (int ms) → showDelay (Duration); remove tooltipMarquee, tooltipWidth; new: fadeInDuration, fadeOutDuration, padding' },
+  WToast: { target: 'EToast', deprecated: true, deprecatedNote: 'EToast is deprecated — use EAlert (overlay mode) or ETooltip instead' },
+  WToastContext: { target: 'EToastContext', deprecated: true, deprecatedNote: 'EToastContext is deprecated — use EAlert (overlay mode) instead' },
+  WTooltip: {
+    target: 'ETooltip',
+    notes: 'WTooltipPosition → ETooltipPosition (14 positions, values added: aboveCenter, aboveLeft, aboveRight, belowCenter, belowLeft, belowRight, leftBottom, leftMiddle, leftTop, rightBottom, rightMiddle, rightTop); WTooltipType → ETooltipType; all param names unchanged',
+    paramChanges: {
+      notes: 'All param names unchanged. Type renames: WTooltipPosition → ETooltipPosition (14 positions), WTooltipType → ETooltipType.',
+    },
+  },
   WTooltipPosition: { target: 'ETooltipPosition' },
   WTooltipType: { target: 'ETooltipType' },
 
   // Tabs
-  WTabs: { target: 'ETabs', notes: 'wTabController → eTabController' },
-  WTabController: { target: 'ETabController' },
+  WTabs: {
+    target: 'ETabs',
+    deprecated: true,
+    deprecatedNote: 'ETabs is deprecated since 2025-06-30 — use ETabLayout + ETabLayoutController instead',
+    notes: 'wTabController → eTabController',
+    paramChanges: {
+      renamed: { wTabController: 'eTabController' },
+    },
+  },
+  WTabController: { target: 'ETabController', deprecated: true, deprecatedNote: 'ETabController is deprecated since 2025-05-19 — use ETabLayoutController instead' },
 
   // Text
   WHeading: { target: 'EHeading', notes: 'WHeadingMarqueeOn → EHeadingMarqueeOn' },
@@ -97,7 +141,7 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WMarqueeAlign: { target: 'EMarqueeAlign' },
 
   // Input
-  WInput: { target: 'EInput', notes: 'WInputSize → EInputSize; WInputType → EInputType; WInputPopupType → EInputPopupType' },
+  WInput: { target: 'EInput', deprecated: true, deprecatedNote: 'EInput is deprecated since 2025-06-30 — use EInputField + EInputPopup combination instead', notes: 'WInputSize → EInputSize; WInputType → EInputType; WInputPopupType → EInputPopupType' },
   WSlider: { target: 'ESlider', notes: 'WSliderOrientation → ESliderOrientation; WSliderTooltipPosition → ESliderTooltipPosition' },
   WSliderOrientation: { target: 'ESliderOrientation' },
   WSliderTooltipPosition: { target: 'ESliderTooltipPosition' },
@@ -105,7 +149,7 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   // Progress
   WProgressBar: { target: 'EProgressBar', notes: 'WProgressBarOrientation → EProgressBarOrientation' },
   WProgressBarOrientation: { target: 'EProgressBarOrientation' },
-  WProgressButton: { target: 'EProgressButton' },
+  WProgressButton: { target: 'EProgressButton', deprecated: true, deprecatedNote: 'EProgressButton is deprecated since 2025-06-30 — use EButton + EProgressBar combination instead' },
 
   // Item variants
   WIconItem: { target: 'EIconItem', notes: 'WIconItemLabelOn → EIconItemLabelOn; WIconItemTitleOn → EIconItemTitleOn' },
@@ -115,15 +159,14 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WImageItem: { target: 'EImageItem' },
   WImageItemRatio: { target: 'EImageItemRatio' },
   WImageItemStyles: { target: 'EImageItemStyles' },
-  WMediaItem: { target: 'EMediaItem' },
+  WMediaItem: { target: 'EMediaItem', deprecated: true, deprecatedNote: 'EMediaItem is deprecated since 2025-06-30 — use EImageItem or EGridItem instead' },
   MediaType: { target: 'EMediaType' },
 
   // Carousel
-  WCarousel: { target: 'ECarousel' },
+  WCarousel: { target: 'ECarousel', deprecated: true, deprecatedNote: 'ECarousel is deprecated since 2025-06-30 — use EAnimatedCarousel or EAnimatedCarouselSlider' },
   WAnimatedCarousel: { target: 'EAnimatedCarousel' },
   WAnimatedCarouselController: { target: 'EAnimatedCarouselController' },
   WAnimatedCarouselState: { target: 'EAnimatedCarouselState' },
-  AnimatedCarouselItemConfig: { target: 'EAnimatedCarouselItemConfig' },
   WAnimatedCarouselSlider: { target: 'EAnimatedCarouselSlider' },
   WAnimatedCarouselSliderController: { target: 'EAnimatedCarouselSliderController' },
   WAnimatedCarouselSliderState: { target: 'EAnimatedCarouselSliderState' },
@@ -139,17 +182,17 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WFocusZoomProperty: { target: 'EFocusZoomProperty' },
   WFocusable: { target: 'EFocusable' },
   WFocusableScope: { target: 'EFocusableScope' },
+  WFocusScopeNode: { target: 'EFocusScopeNode' },
   FocusRootScope: { target: 'EFocusRootScope' },
-  FocusScrollConfig: { target: 'EFocusScrollConfig' },
   AlignFocusedElement: { target: 'EAlignFocusedElement' },
   FiveWaysNavigationTraversalPolicy: { target: 'EFiveWaysTraversalPolicy', notes: 'Verify class name in source — may differ' },
   FocusNavigationPointerLocking: { target: 'EFocusNavigationPointerLocking' },
   FocusUtility: { target: 'EFocusUtility' },
 
   // Guide
-  WKeyGuide: { target: 'EKeyGuide' },
-  WKeyGuideItem: { target: 'EKeyGuideItem' },
-  WKeyGuideController: { target: 'EKeyGuideController' },
+  WKeyGuide: { target: 'EKeyGuide', deprecated: true, deprecatedNote: 'EKeyGuide is deprecated since 2025-06-30 — use EQuickGuidePanels for step-by-step guide flows' },
+  WKeyGuideItem: { target: 'EKeyGuideItem', deprecated: true, deprecatedNote: 'EKeyGuideItem is deprecated since 2025-06-30 — use EQuickGuidePanels with EQuickGuidePanel children' },
+  WKeyGuideController: { target: 'EKeyGuideController', deprecated: true, deprecatedNote: 'EKeyGuideController is deprecated since 2025-06-30 — use EActionGuide or EQuickGuidePanels instead' },
   WActionGuide: { target: 'EActionGuide' },
 
   // Animation helpers
@@ -167,8 +210,9 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WReorderableListView: { target: 'EReorderableListView' },
   ReorderableController: { target: 'EReorderableController' },
   WPointerAndKeysHandler: { target: 'EPointerAndKeysHandler' },
+  WVerticalToHorizontalWheelConverter: { target: 'EVerticalToHorizontalWheelConverter' },
   GlobalKeyHandler: { target: 'EGlobalKeyHandler' },
-  WebOSKeyCodes: { target: 'EWebOSKeyCodes' },
+  WebOSKeyCodes: { target: 'WebOSKeyCodes', deprecated: true, deprecatedNote: 'WebOSKeyCodes is @Deprecated — webOS key constants are deprecated, check EGlobalKeyHandler for updated key handling' },
 
   // Design tokens
   WColorTokens: { target: 'EColorTokens' },
@@ -181,7 +225,7 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WFont: { target: 'EFont' },
 
   // Panels
-  WPanels: { target: 'EPanels' },
+  WPanels: { target: 'EPanels', notes: 'EPanels.index param is deprecated — use EPanelsController.index instead' },
   WFixedPopupPanels: { target: 'EFixedPopupPanels' },
 
   // Popup menus
@@ -197,8 +241,10 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   VoiceControlProperties: { target: 'EVoiceControlProperties' },
 
   // Full-screen popup / layered popup
-  WFullScreenPopup: { target: 'EFullScreenPopup', notes: 'Verify — may be EWizardPanels or EFlexiblePopupPanels' },
-  WLayeredPopup: { target: 'ELayeredPopup', notes: 'Verify class name in source' },
+  WFullScreenPopup: { target: 'EWizardPanels', notes: 'Wizard-style fullscreen popup panels; WFullScreenPopupController has no direct equivalent — manage state via EWizardPanels callbacks' },
+  WFullScreenPopupController: { target: 'EWizardPanels', notes: 'No separate controller in EWizardPanels — use onChange/onNextClick/onPrevClick callbacks instead' },
+  WLayeredPopup: { target: 'EFlexiblePopupPanels', notes: 'Flexible popup panels replacing layered popup; WLayeredPopupController → FlexiblePopupPanelsController' },
+  WLayeredPopupController: { target: 'FlexiblePopupPanelsController' },
 
   // Scrollable / hover scroll
   WScrollable: { target: 'EScrollable' },
@@ -208,46 +254,5 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   ButtonIcon: { target: 'EButtonIcon' },
   FocusableWidget: { target: 'EFocusableWidget' },
   ColorState: { target: 'EColorState' },
-  VisibleOnFocus: { target: 'EVisibleOnFocus' },
-};
-
-export const paramChanges: Record<string, ParamChange> = {
-  WButton: {
-    removed: ['keepChild', 'originScale', 'onKey'],
-    renamed: {
-      animation: 'enableAnimation',
-      semanticButtonLabel: 'semanticsLabel',
-    },
-    notes: 'child (Widget) → text (String) for simple text buttons, or buildChildWidget: (context, state) => Widget for complex children. ButtonSize → EButtonSize.',
-  },
-  WVirtualList: {
-    removed: ['hoverToScroll', 'noScrollByWheel', 'onScroll', 'onScrollStart', 'onScrollStop', 'enableVoiceControl', 'groupLabel'],
-    added: ['itemHeight (required, double — item height in logical pixels)'],
-    notes: 'itemBuilder signature changes: (BuildContext, int) → (BuildContext, int, FocusNode?). The focusNode MUST be passed to the child widget (focus-passthrough rule).',
-  },
-  WSpinner: {
-    removed: ['centered', 'container', 'scrim', 'transparent', 'paused'],
-    renamed: {
-      blockClickOn: 'block',
-      content: 'message',
-    },
-    added: ['showCurve', 'showDuration', 'disabled'],
-  },
-  WTooltip: {
-    removed: ['tooltipMarquee', 'tooltipWidth'],
-    renamed: {
-      tooltipPosition: 'direction',
-      tooltipDelay: 'showDelay',
-    },
-    added: ['fadeInDuration', 'fadeOutDuration', 'padding'],
-    notes: 'tooltipDelay was int (milliseconds); showDelay is Duration. tooltipPosition was WTooltipPosition; direction is ETooltipDirection.',
-  },
-  WTabs: {
-    renamed: { wTabController: 'eTabController' },
-  },
-  WSwitchItem: {
-    removed: ['centered', 'inline', 'slotAfter', 'slotBefore'],
-    added: ['focused'],
-    notes: 'ESwitchItem does not support children param. Wrap with EItem if label or slot is needed.',
-  },
+  VisibleOnFocus: { target: 'EVisibleOnFocus' }
 };
