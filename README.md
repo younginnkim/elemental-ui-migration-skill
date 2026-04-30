@@ -6,7 +6,7 @@ Flutter 앱 코드를 Plover(`package:plover`)에서 Elemental UI(`package:elutt
 
 ```
 .claude/skills/migrate-from-plover/   # Claude Code 스킬
-elemental-ui-migration/               # MCP 서버 (Node.js)
+elemental-ui-migration-mcp/               # MCP 서버 (Node.js)
 ```
 
 ## 사용법
@@ -32,7 +32,7 @@ elemental-ui-migration/               # MCP 서버 (Node.js)
 
 ```bash
 # MCP 서버 빌드
-cd elemental-ui-migration
+cd elemental-ui-migration-mcp
 npm install
 npm run build
 ```
@@ -44,7 +44,7 @@ npm run build
   "elemental-ui-migration": {
     "type": "stdio",
     "command": "node",
-    "args": ["/path/to/elemental-ui-migration-skill/elemental-ui-migration/build/index.js"]
+    "args": ["/path/to/elemental-ui-migration-skill/elemental-ui-migration-mcp/build/index.js"]
   }
 }
 ```

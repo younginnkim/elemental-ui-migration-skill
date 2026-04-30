@@ -116,7 +116,7 @@ Apply changes in the order below for each file with Plover usage.
   - Call `elemental-ui-mcp.getWidget(target)` → check `deprecated`, `deprecatedNote`, `aliases` for the recommended alternative.
   - **If an alternative exists** (listed in `aliases` or in the deprecated table below):
     - Call `elemental-ui-mcp.getWidget(alternative_name)` → get the alternative's full parameter list.
-    - Call `elemental-ui-migration-mcp.getFileSnippets({ path, lines })` to see the deprecated widget's constructor call site.
+    - Use `Read({ file_path: path, offset: line - 5, limit: 11 })` for each line to see the deprecated widget's constructor call site (call in parallel for multiple lines).
     - Map parameters: deprecated widget params → alternative widget params 1:1.
       - Renamed params → use the new name.
       - Params missing in the alternative → annotate `// TODO(migrate): <paramName> removed`.
@@ -130,12 +130,12 @@ Apply changes in the order below for each file with Plover usage.
 
 **2-3. Parameter changes for breaking-change widgets**
 - Param diffs are in the [Parameter changes](#parameter-changes) section — `getWidgetDetail()` not required.
-- For files with breaking changes, call `getFileSnippets({ path, lines })` (use line numbers from Step 1).
-- Build `old_string` from the returned `context` and apply a targeted Edit.
+- For files with breaking changes, `Read({ file_path: path, offset: line - 5, limit: 11 })` for each line from Step 1 (parallelize per file).
+- Build `old_string` from the returned content and apply a targeted Edit.
 
 **2-4. Mark manual-handling items**
-- Call `getFileSnippets({ path, lines })` (use line numbers from Step 1).
-- Build `old_string` from `context` and Edit to add `// TODO(migrate): <reason>`.
+- `Read({ file_path: path, offset: line - 5, limit: 11 })` for each line from Step 1 (parallelize per file).
+- Build `old_string` from the returned content and Edit to add `// TODO(migrate): <reason>`.
 
 **2-5. Validate parameters against new widget (post-rename sweep)**
 
@@ -143,7 +143,7 @@ After 2-1 ~ 2-4 complete for **all files**, removed/renamed parameters that the 
 
 1. Re-run `flutter analyze --format=machine` (fall back to `dart analyze`). Filter `UNDEFINED_NAMED_PARAMETER` only. Each entry gives `file|line|col` and a message of the form: `The named parameter 'centered' isn't defined.` — extract the param name from the single quotes.
 
-2. Group hits by file and by enclosing widget call site. To find the widget name: call `getFileSnippets({ path, lines: [<errorLine>] })` and walk upward until you hit `E<Name>(`.
+2. Group hits by file and by enclosing widget call site. To find the widget name: `Read({ file_path: path, offset: errorLine - 5, limit: 11 })` and walk upward until you hit `E<Name>(`.
 
 3. For each unique target widget across all hits, call `elemental-ui-mcp.getWidget(<name>)` **once** (cache the result) to get the current parameter list with descriptions.
 
