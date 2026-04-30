@@ -137,6 +137,53 @@ Apply changes in the order below for each file with Plover usage.
 - Call `getFileSnippets({ path, lines })` (use line numbers from Step 1).
 - Build `old_string` from `context` and Edit to add `// TODO(migrate): <reason>`.
 
+**2-5. Validate parameters against new widget (post-rename sweep)**
+
+After 2-1 ~ 2-4 complete for **all files**, removed/renamed parameters that the static mapping didn't catch will surface as compile errors. Run a single analyze pass to find them and comment them out with a suggested alternative.
+
+1. Re-run `flutter analyze --format=machine` (fall back to `dart analyze`). Filter `UNDEFINED_NAMED_PARAMETER` only. Each entry gives `file|line|col` and a message of the form: `The named parameter 'centered' isn't defined.` — extract the param name from the single quotes.
+
+2. Group hits by file and by enclosing widget call site. To find the widget name: call `getFileSnippets({ path, lines: [<errorLine>] })` and walk upward until you hit `E<Name>(`.
+
+3. For each unique target widget across all hits, call `elemental-ui-mcp.getWidget(<name>)` **once** (cache the result) to get the current parameter list with descriptions.
+
+4. For each removed param at (file, line):
+   - **Skip** if the line already contains `// TODO(migrate)` — idempotent against re-runs.
+   - Decide single-line vs multi-line:
+     - **Single-line** (`paramName: value,` fits on one line): wrap the entire `paramName: value,` in `/* */`.
+     - **Multi-line** (value spans multiple lines, e.g. nested widget): starting at the `:` after `paramName`, balance `(`/`)`/`{`/`}`/`[`/`]` to find the matching trailing `,` (or the closing `)` if it's the last param). Wrap the full expression — from `paramName:` through the trailing `,` — in `/* */`.
+   - On the line **immediately above** the commented-out region, insert:
+     ```
+     // TODO(migrate): `<paramName>` removed — consider `<alt>`
+     ```
+     where `<alt>` is chosen by comparing the removed param's name + value semantics against the new widget's param descriptions from getWidget. Pick the closest semantic match if there is one (e.g. `centered: true` → `alignment: Alignment.center`); otherwise use `no direct replacement`.
+
+5. After all edits, run `flutter analyze --format=machine` once more and record the remaining `UNDEFINED_NAMED_PARAMETER` count. The number should be 0 since `/* */` neutralizes the removed params; any non-zero count means a comment-out was malformed and needs manual review. Carry this number into Step 5.
+
+**Output example:**
+
+```dart
+// before
+ESwitchItem(
+  centered: true,
+  slotBefore: SomeWidget(
+    child: Text('label'),
+  ),
+  value: isOn,
+)
+
+// after
+ESwitchItem(
+  // TODO(migrate): `centered` removed — consider `alignment: Alignment.center`
+  /* centered: true, */
+  // TODO(migrate): `slotBefore` removed — wrap parent in `EItem` to attach a leading widget
+  /* slotBefore: SomeWidget(
+    child: Text('label'),
+  ), */
+  value: isOn,
+)
+```
+
 ### Step 3 — App Foundation migration (EApp + EAppMain)
 
 Convert app-level structure (not present in Plover) to the standard Elemental UI pattern.
@@ -236,6 +283,8 @@ Print a table summary of:
 - Total identifiers replaced
 - Breaking changes requiring manual edits
 - Widgets renamed to a deprecated target (renamed to `@Deprecated` Elemental UI target)
+- Parameters auto-commented in Step 2-5 (count, plus a sample of `<widget>.<param>`)
+- Remaining `UNDEFINED_NAMED_PARAMETER` count from the final analyze in Step 2-5 (should be 0 — non-zero means manual review needed)
 - Remaining `// TODO(migrate):` items
 
 ---

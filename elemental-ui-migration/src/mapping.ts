@@ -41,7 +41,7 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WHeaderType: { target: 'EHeaderType' },
   WHeaderButtons: { target: 'EHeaderButtons' },
   WHeaderButtonBackgroundOpacity: { target: 'EHeaderButtonBackgroundOpacity' },
-  WHeaderMarqeeOn: { target: 'EHeaderMarqueeOn' },
+  WHeaderMarqeeOn: { target: 'EHeaderMarqeeOn' },
 
   // Popup
   WPopup: { target: 'EPopup' },
@@ -160,11 +160,64 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WImageItemRatio: { target: 'EImageItemRatio' },
   WImageItemStyles: { target: 'EImageItemStyles' },
   WMediaItem: { target: 'EMediaItem', deprecated: true, deprecatedNote: 'EMediaItem is deprecated since 2025-06-30 — use EImageItem or EGridItem instead' },
-  MediaType: { target: 'EMediaType' },
+  MediaType: { target: 'MediaType', notes: 'Name preserved (no E prefix) in elutter.dart' },
 
   // Carousel
   WCarousel: { target: 'ECarousel', deprecated: true, deprecatedNote: 'ECarousel is deprecated since 2025-06-30 — use EAnimatedCarousel or EAnimatedCarouselSlider' },
-  WAnimatedCarousel: { target: 'EAnimatedCarousel' },
+  WAnimatedCarousel: {
+    target: 'EHorizontalList',
+    breakingChange: true,
+    notes:
+      'Migrating to EHorizontalList drops carousel-specific behavior: focus scale-up (animatedScale/enterAnimCurve/exitAnimCurve/shouldScaleFirstAndLastItemFromEdge/itemConfigBuilder), initial focus index (initialOfFocused), focus-by-index controller (carouselController.requestFocusOnItem), per-item header/title (itemHeader/itemHeaderKey/onTapItemHeader/itemTitleBuilder), animated header (header(bool animation) → static title), focus-change callback (onFocusChangeItem), keyboard customization (registeredLongPressKeys/registeredTapKeys/longPressDuration), voice control (itemLabel/groupLabel/typeVoiceItemHeader), and Axis.vertical (use EVerticalList). enableMotion default flips false→true.',
+    paramChanges: {
+      removed: [
+        'animatedScale',
+        'enterAnimCurve',
+        'exitAnimCurve',
+        'shouldScaleFirstAndLastItemFromEdge',
+        'itemConfigBuilder',
+        'initialOfFocused',
+        'carouselController',
+        'onFocusChangeItem',
+        'onFocusedItemAnimationChange',
+        'delayAutoScroll',
+        'itemHeader',
+        'itemHeaderKey',
+        'onTapItemHeader',
+        'typeVoiceItemHeader',
+        'itemTitleBuilder',
+        'registeredLongPressKeys',
+        'registeredTapKeys',
+        'longPressDuration',
+        'itemLabel',
+        'groupLabel',
+        'itemKey',
+        'speedScrolling',
+        'scrollZone',
+        'animDuration',
+        'onShowItem',
+        'direction',
+      ],
+      renamed: {
+        controller: 'scrollController',
+        onTap: 'onItemTap',
+        onLongPress: 'onItemLongPress',
+        scrollType: 'scrollCurve',
+        childMargin: 'spacing',
+        header: 'title',
+      },
+      added: [
+        'focusScopeNode',
+        'autoFocus',
+        'enableHoverScroll',
+        'alignFocusedElement',
+        'scrollDuration',
+        'longPressCurve',
+      ],
+      notes:
+        'Signature/default changes: onLongPress (int, KeyEvent?) → onItemLongPress (int, {bool isKey}); scrollType default Curves.linear → scrollCurve default Curves.easeOutCirc; childMargin default 0 → spacing default 8.0; header(bool animation)→Widget → title:Widget? (animation flag dropped); enableMotion default false → true. itemBuilder signature (BuildContext, int, bool isFocus) → Widget is preserved. direction:Axis is removed — EHorizontalList is horizontal-only; for Axis.vertical use EVerticalList instead.',
+    },
+  },
   WAnimatedCarouselController: { target: 'EAnimatedCarouselController' },
   WAnimatedCarouselState: { target: 'EAnimatedCarouselState' },
   WAnimatedCarouselSlider: { target: 'EAnimatedCarouselSlider' },
@@ -183,13 +236,21 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WFocusable: { target: 'EFocusable' },
   WFocusableScope: { target: 'EFocusableScope' },
   WFocusScopeNode: { target: 'EFocusScopeNode' },
-  FocusRootScope: { target: 'EFocusRootScope' },
-  AlignFocusedElement: { target: 'EAlignFocusedElement' },
-  FiveWaysNavigationTraversalPolicy: { target: 'EFiveWaysTraversalPolicy', notes: 'Verify class name in source — may differ' },
-  FocusNavigationPointerLocking: { target: 'EFocusNavigationPointerLocking' },
-  FocusUtility: { target: 'EFocusUtility' },
+  FocusRootScope: { target: 'FocusRootScope', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  AlignFocusedElement: { target: 'AlignFocusedElement', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  FocusScrollConfig: { target: 'FocusScrollConfig', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  FocusNavigationManager: { target: 'FocusNavigationManager', notes: 'Name preserved; new FocusNavigationMode enum added in elutter' },
+  FiveWaysNavigationTraversalPolicy: { target: 'FiveWaysNavigationTraversalPolicy', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  FocusNavigationPointerLocking: { target: 'FocusNavigationPointerLocking', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  FocusUtility: { target: 'FocusUtility', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  ScrollOffset: { target: 'ScrollOffset', notes: 'Name preserved (no E prefix) in elutter.dart' },
 
   // Guide
+  WButtonGuide: {
+    target: '?',
+    breakingChange: true,
+    notes: 'No direct equivalent in elemental_widgets — e_button_guide directory and EButtonGuide class do not exist. Likely consolidated into EKeyGuide / EQuickGuidePanels / EActionGuide; choose based on use case.',
+  },
   WKeyGuide: { target: 'EKeyGuide', deprecated: true, deprecatedNote: 'EKeyGuide is deprecated since 2025-06-30 — use EQuickGuidePanels for step-by-step guide flows' },
   WKeyGuideItem: { target: 'EKeyGuideItem', deprecated: true, deprecatedNote: 'EKeyGuideItem is deprecated since 2025-06-30 — use EQuickGuidePanels with EQuickGuidePanel children' },
   WKeyGuideController: { target: 'EKeyGuideController', deprecated: true, deprecatedNote: 'EKeyGuideController is deprecated since 2025-06-30 — use EActionGuide or EQuickGuidePanels instead' },
@@ -208,10 +269,10 @@ export const widgetMapping: Record<string, WidgetMapping> = {
 
   // Misc
   WReorderableListView: { target: 'EReorderableListView' },
-  ReorderableController: { target: 'EReorderableController' },
+  ReorderableController: { target: 'ReorderableController', notes: 'Name preserved (no E prefix) in elutter.dart' },
   WPointerAndKeysHandler: { target: 'EPointerAndKeysHandler' },
   WVerticalToHorizontalWheelConverter: { target: 'EVerticalToHorizontalWheelConverter' },
-  GlobalKeyHandler: { target: 'EGlobalKeyHandler' },
+  GlobalKeyHandler: { target: 'GlobalKeyHandler', notes: 'Name preserved (no E prefix) in elutter.dart' },
   WebOSKeyCodes: { target: 'WebOSKeyCodes', deprecated: true, deprecatedNote: 'WebOSKeyCodes is @Deprecated — webOS key constants are deprecated, check EGlobalKeyHandler for updated key handling' },
 
   // Design tokens
@@ -228,31 +289,70 @@ export const widgetMapping: Record<string, WidgetMapping> = {
   WPanels: { target: 'EPanels', notes: 'EPanels.index param is deprecated — use EPanelsController.index instead' },
   WFixedPopupPanels: { target: 'EFixedPopupPanels' },
 
-  // Popup menus
-  WPopupMenu: { target: 'EPopupMenu' },
-  WSettingPopup: { target: 'ESettingPopup' },
-  WPopUpMenuButton: { target: 'EPopUpMenuButton' },
-  WPopUpMenuItem: { target: 'EPopUpMenuItem' },
-  PopupMenuController: { target: 'EPopupMenuController' },
-  PopupMenuScrimType: { target: 'EPopupMenuScrimType' },
+  // Popup menus — no direct E* equivalents; replaced by EContextualMenuDecorator
+  WPopupMenu: {
+    target: 'EContextualMenuDecorator',
+    breakingChange: true,
+    notes: 'No direct equivalent. Plover popup menu API was replaced by EContextualMenuDecorator (anchored contextual menu). Restructure required — EPopupMenu does not exist in elemental_widgets.',
+  },
+  WSettingPopup: {
+    target: 'EContextualMenuDecorator',
+    breakingChange: true,
+    notes: 'No direct equivalent. Setting popup pattern is now built with EContextualMenuDecorator (or EPopupTabLayout for tabbed setting panels). ESettingPopup does not exist in elemental_widgets.',
+  },
+  WPopUpMenuButton: {
+    target: 'EContextualMenuDecorator',
+    breakingChange: true,
+    notes: 'No direct equivalent. Wrap an EButton with EContextualMenuDecorator to anchor the menu. EPopUpMenuButton does not exist in elemental_widgets.',
+  },
+  WPopUpMenuItem: {
+    target: 'EContextualMenuDecorator',
+    breakingChange: true,
+    notes: 'No direct equivalent. Menu items are now passed as content children of EContextualMenuDecorator. EPopUpMenuItem does not exist in elemental_widgets.',
+  },
+  PopupMenuController: {
+    target: 'EContextualMenuDecorator',
+    breakingChange: true,
+    notes: 'No direct equivalent. Use EContextualMenuDecorator + EContextualPopupController. EPopupMenuController does not exist in elemental_widgets.',
+  },
+  PopupMenuScrimType: {
+    target: '?',
+    breakingChange: true,
+    notes: 'No direct equivalent. Scrim is configured through EContextualMenuDecorator parameters. EPopupMenuScrimType does not exist in elemental_widgets.',
+  },
+  PopUpContentListModel: {
+    target: '?',
+    breakingChange: true,
+    notes: 'No direct equivalent in elemental_widgets — was used to feed WSettingPopup; reshape data inline for EContextualMenuDecorator.',
+  },
 
   // Voice / accessibility
   WVoiceControl: { target: 'EVoiceControl' },
-  VoiceControlProperties: { target: 'EVoiceControlProperties' },
+  VoiceControlProperties: { target: 'VoiceControlProperties', notes: 'Name preserved (no E prefix) in elutter.dart' },
 
   // Full-screen popup / layered popup
   WFullScreenPopup: { target: 'EWizardPanels', notes: 'Wizard-style fullscreen popup panels; WFullScreenPopupController has no direct equivalent — manage state via EWizardPanels callbacks' },
   WFullScreenPopupController: { target: 'EWizardPanels', notes: 'No separate controller in EWizardPanels — use onChange/onNextClick/onPrevClick callbacks instead' },
-  WLayeredPopup: { target: 'EFlexiblePopupPanels', notes: 'Flexible popup panels replacing layered popup; WLayeredPopupController → FlexiblePopupPanelsController' },
-  WLayeredPopupController: { target: 'FlexiblePopupPanelsController' },
+  WLayeredPopup: { target: 'FlexiblePopupPanels', notes: 'Flexible popup panels replacing layered popup. NOTE: target class is FlexiblePopupPanels (no E prefix in elemental_widgets); related classes: FlexiblePopupPanel, FlexiblePopupPanelsController, FlexiblePanelData, FlexiblePanelContext.' },
+  WLayeredPopupController: { target: 'FlexiblePopupPanelsController', notes: 'Name has no E prefix in elemental_widgets' },
 
   // Scrollable / hover scroll
   WScrollable: { target: 'EScrollable' },
 
   // Other
+  Button: { target: 'EButton', notes: 'Plover exposes a separate Button class alongside WButton; in elutter both collapse into EButton.' },
   ButtonSize: { target: 'EButtonSize' },
   ButtonIcon: { target: 'EButtonIcon' },
-  FocusableWidget: { target: 'EFocusableWidget' },
-  ColorState: { target: 'EColorState' },
-  VisibleOnFocus: { target: 'EVisibleOnFocus' }
+  ButtonBackgroundOpacity: { target: 'EButtonBackgroundOpacity' },
+  ButtonDecorator: { target: 'ButtonDecorator', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  CustomAnimation: { target: 'CustomAnimation', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  IconFlip: { target: 'IconFlip', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  IconPosition: { target: 'IconPosition', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  FocusableWidget: { target: 'FocusableWidget', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  ColorState: { target: 'ColorState', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  VisibleOnFocus: { target: 'VisibleOnFocus', notes: 'Name preserved (no E prefix) in elutter.dart' },
+
+  // Icons
+  LimestoneIcons: { target: 'LimestoneIcons', notes: 'Name preserved (no E prefix) in elutter.dart' },
+  SandstoneIcons: { target: '?', notes: 'Not exported from elutter.dart entrypoint — verify if removed or relocated' },
 };
