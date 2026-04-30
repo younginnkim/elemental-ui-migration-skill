@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { widgetMapping } from './mapping.js';
 
 const server = new McpServer({
-  name: 'elemental-ui-migration',
+  name: 'elemental-ui-migration-mcp',
   version: '1.0.0',
 });
 
@@ -58,7 +58,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('elemental-ui-migration MCP server running');
+  console.error('elemental-ui-migration-mcp MCP server running');
 }
 
 main().catch(err => {

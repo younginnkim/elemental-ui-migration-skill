@@ -37,12 +37,12 @@ import 교체, 위젯 이름 변경, enum 이름 변경, 파라미터 변경(bre
 **1-1. pubspec.yaml 수정** — 두 변경을 한 번의 Edit으로 적용.
 
 1. `dependencies:`에서 `plover:` 제거
-2. `elutter:` git dependency 추가 (이미 있으면 skip):
+2. `elemental:` git dependency 추가 (이미 있으면 skip):
 ```yaml
-  elutter:
+  elemental:
     git:
-      url: ssh://wall.lge.com/module/elutter
-      ref: develop
+      url: ssh://wall.lge.com/module/elutter # elemental_ui로 변경 계획
+      ref: main
 ```
 이 단계는 마이그레이션의 일부 — 되돌리지 말 것.
 
@@ -111,7 +111,7 @@ ERROR|COMPILE_TIME_ERROR|UNDEFINED_IDENTIFIER|lib/views/home.dart|46|3|12|Undefi
 
 **2-1. import 교체** (Read 불필요)
 - Plover barrel import는 항상 동일 — 바로 Edit:
-  - `old_string: "import 'package:plover/plover.dart';"` → `new_string: "import 'package:elutter/elutter.dart';"`
+  - `old_string: "import 'package:plover/plover.dart';"` → `new_string: "import 'package:elemental/widgets.dart';"`
 
 **2-2. 위젯 / enum 이름 교체**
 - Step 1-4에서 받은 결과의 `target` 필드를 교체 이름으로 사용.
@@ -271,7 +271,7 @@ i18n 마이그레이션(LocalizationDelegate → EApp 내장)은 비동기 init 
 
 **3-5. import 확인**
 
-Step 2에서 `import 'package:elutter/elutter.dart';`가 추가됐는지 확인. 없으면 추가.
+Step 2에서 `import 'package:elemental/widgets.dart';`가 추가됐는지 확인. 없으면 추가.
 
 ---
 

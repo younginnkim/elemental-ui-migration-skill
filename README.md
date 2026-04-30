@@ -38,7 +38,7 @@ npm run build
 
 ```json
 "mcpServers": {
-  "elemental-ui-migration": {
+  "elemental-ui-migration-mcp": {
     "type": "stdio",
     "command": "node",
     "args": ["/path/to/elemental-ui-migration-skill/elemental-ui-migration-mcp/build/index.js"]
