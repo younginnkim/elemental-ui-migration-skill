@@ -6,7 +6,7 @@ Flutter 앱 코드를 Plover(`package:plover`)에서 Elemental UI(`package:elutt
 
 ```
 .claude/skills/migrate-from-plover/   # Claude Code 스킬
-elemental-ui-migration-mcp/               # MCP 서버 (Node.js)
+elemental-ui-migration-mcp/           # MCP 서버 (Node.js)
 ```
 
 ## 사용법
@@ -23,10 +23,7 @@ elemental-ui-migration-mcp/               # MCP 서버 (Node.js)
 
 | 툴 | 설명 |
 |---|---|
-| `scanDartFile` | Dart 파일/디렉토리에서 Plover 사용 스캔 |
-| `listWidgetMappings` | 전체 위젯 매핑 목록 조회 |
-| `getWidgetMigration` | 특정 위젯의 마이그레이션 상세 정보 |
-| `getBreakingChanges` | 수동 처리가 필요한 breaking change 목록 |
+| `getWidgetDetail` | 특정 Plover 위젯/클래스의 마이그레이션 상세 정보 (대상 이름, 파라미터 변경, breaking change, 노트) |
 
 ## 설치
 
