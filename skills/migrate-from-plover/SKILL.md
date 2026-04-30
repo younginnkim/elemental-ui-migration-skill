@@ -26,6 +26,8 @@ import 교체, 위젯 이름 변경, enum 이름 변경, 파라미터 변경(bre
 
 **입력:** `$ARGUMENTS` — Dart 파일 또는 디렉토리 경로. 비어 있으면 IDE에서 열린 파일 사용; 그것도 없으면 `lib/`로 fallback.
 
+**중요:** 사용자에게 범위 축소(scoped/dry-run/부분 마이그레이션) 여부를 묻지 말 것. 입력 경로 전체에 대해 즉시 full migration을 진행한다. pubspec에서 plover 제거는 정상 흐름이며 되돌리지 말 것 (Step 1-1 참조).
+
 ---
 
 ## 단계
@@ -37,7 +39,7 @@ import 교체, 위젯 이름 변경, enum 이름 변경, 파라미터 변경(bre
 **1-1. pubspec.yaml 수정** — 두 변경을 한 번의 Edit으로 적용.
 
 1. `dependencies:`에서 `plover:` 제거
-2. `elemental:` git dependency 추가 (이미 있으면 skip):
+2. `elemental:` git dependency 추가 (기존에 elutter 존재한다면 교체):
 ```yaml
   elemental:
     git:
