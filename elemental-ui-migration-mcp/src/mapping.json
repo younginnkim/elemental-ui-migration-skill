@@ -320,6 +320,10 @@
     "target": "EFocusScopeNode",
     "action": "rename"
   },
+  "WFocusNode": {
+    "target": "EFocusNode",
+    "action": "rename"
+  },
   "FocusRootScope": {
     "target": "FocusRootScope",
     "action": "rename",

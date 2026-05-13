@@ -44,7 +44,7 @@ import 교체, 위젯 이름 변경, enum 이름 변경, 파라미터 변경(bre
   elemental:
     git:
       url: ssh://wall.lge.com/module/elutter # elemental_ui로 변경 계획
-      ref: main
+      ref: master
 ```
 이 단계는 마이그레이션의 일부 — 되돌리지 말 것.
 
