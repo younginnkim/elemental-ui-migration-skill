@@ -1,12 +1,12 @@
 ---
 name: migrate-from-plover
-description: Flutter 앱을 Plover(package:plover)에서 Elemental UI(package:elutter)로 마이그레이션합니다.
+description: Flutter 앱을 Plover(package:plover)에서 Elemental UI(package:elemental)로 마이그레이션합니다.
 argument-hint: "[dart_file_or_directory]"
 ---
 
 # /migrate-from-plover
 
-Plover 위젯 라이브러리(`package:plover`)를 사용하는 Flutter Dart 코드를 Elemental UI(`package:elutter`)로 마이그레이션합니다.
+Plover 위젯 라이브러리(`package:plover`)를 사용하는 Flutter Dart 코드를 Elemental UI(`package:elemental`)로 마이그레이션합니다.
 import 교체, 위젯 이름 변경, enum 이름 변경, 파라미터 변경(breaking change 포함)을 자동 처리합니다.
 
 위젯 매핑·deprecated 정보·파라미터 변경 정보는 모두 `elemental-ui-migration-mcp.getWidgetDetail(name)` MCP 툴이 단일 진실 공급원(single source of truth)으로 제공합니다 — 이 문서에는 매핑 표를 중복으로 두지 않습니다.
@@ -39,11 +39,11 @@ import 교체, 위젯 이름 변경, enum 이름 변경, 파라미터 변경(bre
 **1-1. pubspec.yaml 수정** — 두 변경을 한 번의 Edit으로 적용.
 
 1. `dependencies:`에서 `plover:` 제거
-2. `elemental:` git dependency 추가 (기존에 elutter 존재한다면 교체):
+2. `elemental:` git dependency 추가 (기존에 존재한다면 교체):
 ```yaml
   elemental:
     git:
-      url: ssh://wall.lge.com/module/elutter # elemental_ui로 변경 계획
+      url: ssh://wall.lge.com/module/elemental_ui
       ref: master
 ```
 이 단계는 마이그레이션의 일부 — 되돌리지 말 것.
@@ -58,10 +58,10 @@ flutter pub get 2>&1
 
 - **성공** → 다음 단계로
 - **실패 + "version solving failed"**:
-  - 에러에서 충돌 패키지명과 elutter가 요구하는 버전을 파싱.
-    예: `Because myapp depends on flutter_lints ^2.0.0 and elutter depends on flutter_lints ^3.0.0`
+  - 에러에서 충돌 패키지명과 elemental이 요구하는 버전을 파싱.
+    예: `Because myapp depends on flutter_lints ^2.0.0 and elemental depends on flutter_lints ^3.0.0`
     → `flutter_lints`를 `^3.0.0`으로 갱신
-  - pubspec.yaml의 제약을 elutter 요구 버전으로 교체하고 재시도.
+  - pubspec.yaml의 제약을 elemental 요구 버전으로 교체하고 재시도.
 - **5회 후에도 실패** → 에러 출력 후 중단. 사용자에게 수동 해결 요청.
 
 **1-3. 컴파일러 에러 수집**

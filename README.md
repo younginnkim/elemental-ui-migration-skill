@@ -1,6 +1,6 @@
 # elemental-ui-migration-skill
 
-Flutter 앱 코드를 Plover(`package:plover`)에서 Elemental UI(`package:elutter`)로 마이그레이션하는 Claude Code 스킬 + MCP 서버.
+Flutter 앱 코드를 Plover(`package:plover`)에서 Elemental UI(`package:elemental`)로 마이그레이션하는 Claude Code 스킬 + MCP 서버.
 
 ## 구성
 
