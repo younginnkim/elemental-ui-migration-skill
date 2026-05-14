@@ -1,7 +1,7 @@
 {
   "name": "elemental-ui-migration-mcp",
   "version": "1.0.0",
-  "description": "MCP server for migrating Flutter Plover widgets to Elemental UI (elutter)",
+  "description": "MCP server for migrating Flutter Plover widgets to Elemental UI (elemental)",
   "type": "module",
   "main": "build/index.js",
   "scripts": {
