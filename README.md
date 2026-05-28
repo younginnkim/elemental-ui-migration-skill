@@ -1,13 +1,14 @@
 # elemental-ui-migration-skill
 
-Flutter 앱 코드를 Plover(`package:plover`)에서 Elemental UI(`package:elemental`)로 마이그레이션하는 Claude Code 스킬 + MCP 서버.
+Flutter 앱 코드를 Plover(`package:plover`) / elutter(`package:elutter`)에서 Elemental UI(`package:elemental`)로 마이그레이션하는 Claude Code 스킬.
 
 ## 구성
 
 ```
-.claude/skills/migrate-from-plover/   # Claude Code 스킬
-elemental-ui-migration-mcp/           # MCP 서버 (Node.js)
+skills/migrate-from-plover/SKILL.md   # Claude Code 스킬
 ```
+
+위젯 매핑·deprecated·파라미터 변경 정보는 이 레포에 두지 않고 **외부 HTTP MCP 서버**가 단일 진실 공급원(single source of truth)으로 제공합니다. 스킬은 아래 두 서버를 호출합니다.
 
 ## 사용법
 
@@ -19,29 +20,26 @@ elemental-ui-migration-mcp/           # MCP 서버 (Node.js)
 
 인자 없이 실행하면 IDE에서 열린 파일 또는 `lib/`를 대상으로 동작합니다.
 
-## MCP 서버 툴
+## 의존 MCP 서버
 
-| 툴 | 설명 |
-|---|---|
-| `getWidgetDetail` | 특정 Plover 위젯/클래스의 마이그레이션 상세 정보 (대상 이름, 파라미터 변경, breaking change, 노트) |
+스킬은 두 개의 HTTP MCP 서버를 사용합니다. 둘 다 한 곳에 띄워져 있어 사용자는 URL만 등록하면 됩니다 (npm 실행·빌드 불필요).
 
-## 설치
+| 서버 | 주요 툴 | 역할 |
+|---|---|---|
+| `elemental-ui-migration` | `getWidgetDetail(name)` | Plover/elutter 위젯·클래스의 마이그레이션 상세 (대상 이름, 파라미터 변경, breaking change, 노트) |
+| `elemental-ui` | `getWidget`, `listWidgets`, `matchWidget`, `getPatterns`, `getFocusRules`, `getDesignTokens` | Elemental UI 위젯의 현재 파라미터·패턴·포커스 규칙 등 메타데이터 |
 
-```bash
-# MCP 서버 빌드
-cd elemental-ui-migration-mcp
-npm install
-npm run build
-```
-
-`~/.claude.json`에 MCP 서버가 등록되어 있어야 합니다:
+## 클라이언트 등록 (`~/.claude.json`)
 
 ```json
 "mcpServers": {
-  "elemental-ui-migration-mcp": {
-    "type": "stdio",
-    "command": "node",
-    "args": ["/path/to/elemental-ui-migration-skill/elemental-ui-migration-mcp/build/index.js"]
+  "elemental-ui-migration": {
+    "type": "http",
+    "url": "http://10.157.70.184:8000/mcp"
+  },
+  "elemental-ui": {
+    "type": "http",
+    "url": "http://10.157.70.206:3030/mcp"
   }
 }
 ```
